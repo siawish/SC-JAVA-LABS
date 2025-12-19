@@ -1,0 +1,108 @@
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Iterator;
+
+/**
+ * A simple predator-prey simulator, based on a rectangular field
+ * containing rabbits and foxes.
+ * This class is now decoupled from concrete animal classes.
+ */
+public class Simulator
+{
+    private List<Animal> animals;
+    private Field field;
+    private int step;
+    private SimulatorView view;
+    private PopulationGenerator populationGenerator;
+    
+    /**
+     * Construct a simulation field with default size.
+     */
+    public Simulator()
+    {
+        this(120, 80);
+    }
+    
+    /**
+     * Create a simulation field with the given size.
+     * @param depth Depth of the field. Must be greater than zero.
+     * @param width Width of the field. Must be greater than zero.
+     */
+    public Simulator(int depth, int width)
+    {
+        if(width <= 0 || depth <= 0) {
+            System.out.println("The dimensions must be greater than zero.");
+            System.out.println("Using default values.");
+            depth = 120;
+            width = 80;
+        }
+        
+        animals = new ArrayList<>();
+        field = new Field(depth, width);
+
+        view = new SimulatorView(depth, width);
+        populationGenerator = new PopulationGenerator(view);
+        
+        reset();
+    }
+    
+    /**
+     * Run the simulation from its current state for a reasonably long period.
+     */
+    public void runLongSimulation()
+    {
+        simulate(4000);
+    }
+    
+    /**
+     * Run the simulation from its current state for the given number of steps.
+     * @param numSteps The number of steps to run for.
+     */
+    public void simulate(int numSteps)
+    {
+        for(int step = 1; step <= numSteps && view.isViable(field); step++) {
+            simulateOneStep();
+        }
+    }
+    
+    /**
+     * Run the simulation from its current state for a single step.
+     * Iterate over the whole field updating the state of each animal.
+     * This method is now completely decoupled from concrete animal classes.
+     */
+    public void simulateOneStep()
+    {
+        step++;
+
+        List<Animal> newAnimals = new ArrayList<>();        
+        for(Iterator<Animal> it = animals.iterator(); it.hasNext(); ) {
+            Animal animal = it.next();
+            animal.act(newAnimals);
+            if(!animal.isAlive()) {
+                it.remove();
+            }
+        }
+               
+        animals.addAll(newAnimals);
+
+        view.showStatus(step, field);
+    }
+        
+    /**
+     * Reset the simulation to a starting position.
+     */
+    public void reset()
+    {
+        step = 0;
+        animals.clear();
+        populationGenerator.populate(field);
+        
+        view.showStatus(step, field);
+    }
+    
+    public static void main(String[] args)
+    {
+        Simulator sim = new Simulator();
+        sim.simulate(50);
+    }
+}
